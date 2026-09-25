@@ -1,0 +1,48 @@
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+packages:
+  wifi: !include core-wifi.yaml
+
+web_server:
+  include_internal: false
+  version: 3
+
+api:
+  reboot_timeout: 0s  
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    id: my_ota
+    password: !secret ota_password
+
+logger:
+  level: INFO
+
+preferences:
+  flash_write_interval: 10min
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Australia/Melbourne
+
+text_sensor:
+  - platform: version
+    name: ESPHome Version
+    hide_timestamp: true
+    
+sensor:
+  - platform: uptime
+    name: Uptime
+    id: uptime_sensor
+    entity_category: diagnostic
+    
+button:
+  - platform: restart
+    name: Restart ${friendly_name}
+    entity_category: config

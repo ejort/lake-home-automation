@@ -1,0 +1,30 @@
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: ${friendly_name} Hotspot
+    password: !secret ap_password
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal RSSI
+    id: wifi_signal_db
+    entity_category: diagnostic
+
+  - platform: copy
+    source_id: wifi_signal_db
+    id: wifi_signal_pct
+    name: WiFi Signal %
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: diagnostic
+
+# IP address text
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+      id: host_ip
+      entity_category: diagnostic
+      icon: mdi:router-wireless

@@ -1,0 +1,56 @@
+substitutions:
+  name: shed-tank-controller
+  friendly_name: Shed Tank Controller
+
+wifi:
+  use_address: tank-controller.local
+packages:
+  core: !include ../../common/core.yaml
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+i2c:
+  sda: GPIO26
+  scl: GPIO27
+
+ads1115:
+  - address: 0x48
+
+sensor:
+  - platform: ads1115
+    id: pressure_voltage
+    multiplexer: A0_GND
+    gain: 4.096
+    name: Pressure Sensor Voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    update_interval: 10s
+  - platform: template
+    name: Pressure Sensor Current
+    unit_of_measurement: mA
+    accuracy_decimals: 2
+    update_interval: 10s
+    lambda: |-
+      if (isnan(id(pressure_voltage).state)) {
+        return NAN;
+      }
+      return id(pressure_voltage).state * 10.0;
+
+switch:
+  - platform: gpio
+    id: valve_relay
+    name: Valve Relay
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO16
+      mode: OUTPUT
+  - platform: gpio
+    id: led_switch
+    name: LED Switch
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO23
+      mode: OUTPUT
