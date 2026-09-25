@@ -1,17 +1,3 @@
-substitutions:
-  name: shed-tank-controller
-  friendly_name: Shed Tank Controller
-
-wifi:
-  use_address: tank-controller.local
-packages:
-  core: !include ../../common/core.yaml
-
-esp32:
-  board: esp32dev
-  framework:
-    type: esp-idf
-
 i2c:
   sda: GPIO26
   scl: GPIO27
@@ -38,19 +24,3 @@ sensor:
         return NAN;
       }
       return id(pressure_voltage).state * 10.0;
-
-switch:
-  - platform: gpio
-    id: valve_relay
-    name: Valve Relay
-    restore_mode: RESTORE_DEFAULT_OFF
-    pin:
-      number: GPIO16
-      mode: OUTPUT
-  - platform: gpio
-    id: led_switch
-    name: LED Switch
-    restore_mode: RESTORE_DEFAULT_OFF
-    pin:
-      number: GPIO23
-      mode: OUTPUT

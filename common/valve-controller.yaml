@@ -1,0 +1,8 @@
+switch:
+  - platform: gpio
+    id: valve_relay
+    name: Valve Relay
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO16
+      mode: OUTPUT
