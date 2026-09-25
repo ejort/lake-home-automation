@@ -1,0 +1,25 @@
+substitutions:
+  name: house-tank-controller
+  friendly_name: House Tank Controller
+
+wifi:
+  use_address: first-flash.local
+
+packages:
+  core: !include ../../common/core.yaml
+  pressure-sensor: !include ../../common/pressure-sensor.yaml
+  valve-controller: !include ../../common/valve-controller.yaml
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+switch:
+  - platform: gpio
+    id: led_switch
+    name: LED Switch
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO23
+      mode: OUTPUT
