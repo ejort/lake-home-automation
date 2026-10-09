@@ -1,0 +1,19 @@
+# Custom 4–20 mA interface: ADS1115 at 0x48, 100 ohm shunt on A0.
+# ±4.096 V full scale covers the 0.4–2.0 V shunt drop.
+
+i2c:
+  sda: GPIO26
+  scl: GPIO27
+
+ads1115:
+  - address: 0x48
+
+sensor:
+  - platform: ads1115
+    id: pressure_voltage
+    multiplexer: A0_GND
+    gain: 4.096
+    name: Pressure Sensor Voltage
+    unit_of_measurement: V
+    accuracy_decimals: 3
+    update_interval: 10s

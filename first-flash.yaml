@@ -3,10 +3,9 @@ substitutions:
   friendly_name: First Flash
 
 packages:
-  core: !include common/core.yaml
+  base: !include packages/common/base.yaml
 
 esp32:
   board: esp32dev
   framework:
     type: esp-idf
-

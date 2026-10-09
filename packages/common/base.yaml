@@ -1,17 +1,22 @@
+substitutions:
+  # Fallback AP SSID. Override in the device file when the friendly name
+  # would push "${friendly_name}" past the 32-character limit.
+  ap_ssid: ${friendly_name}
 
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
 
 packages:
-  wifi: !include core-wifi.yaml
+  wifi: !include wifi.yaml
+  diagnostics: !include diagnostics.yaml
 
 web_server:
   include_internal: false
   version: 3
 
 api:
-  reboot_timeout: 0s  
+  reboot_timeout: 0s
   encryption:
     key: !secret api_encryption_key
 
@@ -30,19 +35,3 @@ time:
   - platform: homeassistant
     id: ha_time
     timezone: Australia/Melbourne
-
-text_sensor:
-  - platform: version
-    name: ESPHome Version
-    hide_timestamp: true
-    
-sensor:
-  - platform: uptime
-    name: Uptime
-    id: uptime_sensor
-    entity_category: diagnostic
-    
-button:
-  - platform: restart
-    name: Restart ${friendly_name}
-    entity_category: config

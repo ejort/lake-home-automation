@@ -1,22 +1,16 @@
 #!/bin/bash
 
 # Compile and upload ESPHome configs from this repo.
-# Device configs live at devices/<name>/device.yaml.
-# One-off configs such as first-flash live at <name>.yaml in the repo root.
+# Each device is a <name>.yaml entry point in the repo root.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-ESPHOME_IMAGE="ghcr.io/esphome/esphome:2025.4.2"
+ESPHOME_IMAGE="ghcr.io/esphome/esphome:2026.9.1"
 
 list_devices() {
   local yaml name
   shopt -s nullglob
-  for yaml in devices/*/device.yaml; do
-    name="${yaml#devices/}"
-    name="${name%/device.yaml}"
-    printf '  %s\n' "$name"
-  done
   for yaml in *.yaml; do
     name="${yaml%.yaml}"
     printf '  %s\n' "$name"
@@ -26,9 +20,7 @@ list_devices() {
 
 resolve_yaml() {
   local device_name="$1"
-  if [[ -f "devices/${device_name}/device.yaml" ]]; then
-    printf 'devices/%s/device.yaml\n' "$device_name"
-  elif [[ -f "${device_name}.yaml" ]]; then
+  if [[ -f "${device_name}.yaml" ]]; then
     printf '%s.yaml\n' "$device_name"
   else
     return 1
@@ -37,7 +29,7 @@ resolve_yaml() {
 
 if [[ $# -eq 0 ]]; then
   echo "Usage: $0 <device> [<device> ...]"
-  echo "Example: $0 tank-controller-1 lake-control"
+  echo "Example: $0 header-tank-controller water-management-panel"
   echo "Available devices:"
   list_devices
   exit 1

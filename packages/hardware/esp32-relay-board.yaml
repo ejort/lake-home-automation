@@ -1,0 +1,17 @@
+# ESP32 relay board shared by the four field controllers.
+# Relay 1 is GPIO16 and is claimed by valve-control or pump-control.
+# Status LED is GPIO23. Relay outputs are active-high (not inverted).
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+switch:
+  - platform: gpio
+    id: led_switch
+    name: LED Switch
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO23
+      mode: OUTPUT

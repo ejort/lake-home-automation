@@ -1,0 +1,9 @@
+substitutions:
+  name: header-tank-controller
+  friendly_name: Header Tank Controller
+
+packages:
+  base: !include packages/common/base.yaml
+  board: !include packages/hardware/esp32-relay-board.yaml
+  tank_interface: !include packages/hardware/tank-interface-v1.yaml
+  application: !include packages/applications/rainwater/header-tank.yaml

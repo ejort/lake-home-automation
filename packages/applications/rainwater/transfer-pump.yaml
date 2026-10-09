@@ -1,0 +1,5 @@
+# Contactor output for the house transfer pump.
+# Desired run state from the panel is not implemented; the relay is local only.
+
+packages:
+  pump: !include ../../features/pump-control.yaml

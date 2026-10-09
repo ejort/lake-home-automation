@@ -1,0 +1,6 @@
+# Main storage tank. Supplies gravity-fed water.
+# Level and the local valve stay on this controller. It does not run a transfer pump.
+
+packages:
+  valve: !include ../../features/valve-control.yaml
+  level: !include ../../features/pressure-level.yaml

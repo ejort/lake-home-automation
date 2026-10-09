@@ -1,0 +1,15 @@
+# House transfer-pump contactor relay. Do not include together with valve-control.
+# GPIO16, active-high, restore off. Entity id and name are still valve_relay /
+# "Valve Relay" so the existing house-pump-controller entity identity is unchanged.
+# Proposed rename, not applied: id pump_relay, name "Pump Relay".
+# There is no contactor auxiliary or flow proof; relay state is not pump-running confirmation.
+# Panel run requests are not accepted here yet.
+
+switch:
+  - platform: gpio
+    id: valve_relay
+    name: Valve Relay
+    restore_mode: RESTORE_DEFAULT_OFF
+    pin:
+      number: GPIO16
+      mode: OUTPUT

@@ -1,0 +1,6 @@
+# Water Management Panel application.
+# The entry point selects the Guition board. This package selects panel behaviour.
+# Shared state, commands, and house/shed coordination are not configured yet.
+
+packages:
+  ui: !include ui/main.yaml

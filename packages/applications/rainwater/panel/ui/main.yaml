@@ -1,0 +1,162 @@
+# Bring-up UI preserved from the Guition board config.
+# This page toggles the panel's built-in relay light. It is not the rainwater status UI.
+# Water overview, tank, transfer, settings, and alarm pages are not built yet.
+# Widget handlers must not grow transfer sequences; those belong in panel coordination.
+
+substitutions:
+  lightbulb: "\U000F0335"
+  ceiling_light: "\U000F0769"
+  lamp: "\U000F06B5"
+  floor_lamp: "\U000F08DD"
+  string_lights: "\U000F12BA"
+
+# LVGL comes from ESPHome 2026.9. The previous pin of clydebarrow/esphome
+# 82264dc does not compile against current ESPHome (esph_log_e macro).
+
+font:
+  - file: "gfonts://Roboto"
+    id: roboto24
+    size: 24
+    bpp: 4
+    extras:
+      - file: "assets/fonts/materialdesignicons-webfont.ttf" # http://materialdesignicons.com/cdn/7.4.47/
+        glyphs:
+          [
+            "\U000F004B",
+            #"\U0000f0ed",
+            "\U000F006E",
+            "\U000F012C",
+            "\U000F179B",
+            "\U000F0748",
+            "\U000F1A1B",
+            "\U000F02DC",
+            "\U000F0A02",
+            "\U000F035F",
+            "\U000F0156",
+            "\U000F0C5F",
+            "\U000f0084",
+            "\U000f0091",
+          ]
+
+  - file: "assets/fonts/materialdesignicons-webfont.ttf" # http://materialdesignicons.com/cdn/7.4.47/
+    id: light40
+    size: 40
+    bpp: 4
+    glyphs: [
+        "\U000F0335", # mdi-lightbulb
+        "\U000F0769", # mdi-ceiling-light
+        "\U000F06B5", # mdi-lamp
+        "\U000F08DD", # mdi-floor-lamp
+        "\U000F12BA", # mdi-string-lights
+      ]
+
+lvgl:
+  default_group: general
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+  on_idle:
+    - timeout: 10s
+      then:
+        - logger.log: idle timeout
+        - if:
+            condition:
+              lvgl.is_idle:
+                timeout: 5s
+            then:
+              - logger.log: LVGL is idle
+    - timeout: 15s
+      then:
+        - logger.log: idle 15s timeout
+
+      #- lvgl.pause:
+      #- light.turn_off:
+      #    id: display_backlight
+      #    transition_length: 5s
+
+  style_definitions:
+    - id: style_line
+      line_color: 0x0000FF
+      line_width: 8
+      line_rounded: true
+    - id: date_style
+      text_font: roboto24
+      align: center
+      text_color: 0x333333
+      bg_opa: cover
+      radius: 4
+      pad_all: 2
+
+  theme:
+    button:
+      text_font: roboto24
+      scroll_on_focus: true
+      group: general
+      radius: 25
+      width: 150
+      height: 109
+      pad_left: 10px
+      pad_top: 10px
+      pad_bottom: 10px
+      pad_right: 10px
+      shadow_width: 0
+      bg_color: 0x313131
+      text_color: 0xB6B6B6
+      checked:
+        bg_color: 0xCC5E14
+        text_color: 0xB6B6B6
+
+  page_wrap: true
+  pages:
+    - id: main_page
+      # The bring-up page was skip: true. ESPHome requires one page that is not skipped.
+      skip: false
+      layout:
+        type: flex
+        flex_flow: column_wrap
+      width: 100%
+      bg_color: 0x000000
+      bg_opa: cover
+      pad_all: 5
+      widgets:
+        - button:
+            height: 223
+            checkable: true
+            id: lv_button_1
+            widgets:
+              - label:
+                  text_font: light40
+                  align: top_left
+                  text: $lightbulb
+                  id: lv_button_1_icon
+              - label:
+                  align: bottom_left
+                  text: "Center Light"
+                  long_mode: dot
+            on_click:
+              light.toggle: internal_light
+
+light:
+  - platform: binary
+    output: internal_relay_1
+    name: Internal Light
+    id: internal_light
+    on_turn_on:
+      then:
+        - lvgl.widget.update:
+            id: lv_button_1_icon
+            text_color: 0xFFFF00
+        - lvgl.widget.update:
+            id: lv_button_1
+            state:
+              checked: true
+    on_turn_off:
+      then:
+        - lvgl.widget.update:
+            id: lv_button_1_icon
+            text_color: 0xB6B6B6
+        - lvgl.widget.update:
+            id: lv_button_1
+            state:
+              checked: false

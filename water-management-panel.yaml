@@ -1,0 +1,9 @@
+# Node name stays lake-control. The filename is the role name.
+substitutions:
+  name: lake-control
+  friendly_name: Water Management Panel
+
+packages:
+  base: !include packages/common/base.yaml
+  board: !include packages/hardware/guition-esp32-s3-4848s040.yaml
+  application: !include packages/applications/rainwater/panel/main.yaml

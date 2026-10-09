@@ -1,20 +1,10 @@
-i2c:
-  sda: GPIO26
-  scl: GPIO27
-
-ads1115:
-  - address: 0x48
+# Requires tank-interface-v1 (id: pressure_voltage).
+# 100 ohm shunt: I(mA) = V / 100 * 1000 = V * 10.
+# Tank level in length or percent is not calibrated.
 
 sensor:
-  - platform: ads1115
-    id: pressure_voltage
-    multiplexer: A0_GND
-    gain: 4.096
-    name: Pressure Sensor Voltage
-    unit_of_measurement: V
-    accuracy_decimals: 3
-    update_interval: 10s
   - platform: template
+    id: pressure_current
     name: Pressure Sensor Current
     unit_of_measurement: mA
     accuracy_decimals: 2
