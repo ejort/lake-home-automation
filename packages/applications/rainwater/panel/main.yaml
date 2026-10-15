@@ -1,9 +1,14 @@
 # Water Management Panel application.
 # The entry point selects the Guition board. This package selects panel behaviour.
-# The panel commands the house pump over UDP. Shared state for the tanks and
-# house/shed transfer coordination are not configured yet.
+# The panel is the coordinator: it owns every request, holds the interlocks, and
+# is the only node that reads all three tank levels.
+#
+# communications.yaml carries state over UDP packet transport. coordination/ turns
+# that state into what may be commanded. ui/ draws it and calls the request
+# scripts. The layers only go one way: the UI never publishes a request itself.
 
 packages:
   udp: !include ../../../communications/udp.yaml
   communications: !include communications.yaml
+  coordination: !include coordination/main.yaml
   ui: !include ui/main.yaml

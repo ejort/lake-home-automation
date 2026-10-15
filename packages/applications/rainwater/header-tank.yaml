@@ -1,6 +1,9 @@
 # Main storage tank. Supplies gravity-fed water.
 # Level and the local valve stay on this controller. It does not run a transfer pump.
+# The panel owns when that valve may open; this node follows its held request.
 
 packages:
   valve: !include ../../features/valve-control.yaml
   level: !include ../../features/pressure-level.yaml
+  udp: !include ../../communications/udp.yaml
+  communications: !include header-tank-communications.yaml

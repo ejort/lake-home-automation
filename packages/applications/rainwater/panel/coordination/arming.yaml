@@ -1,0 +1,33 @@
+# Shared arming gate for the interlocks in this directory.
+#
+# Every interlock treats an unknown tank level as unsafe, which would otherwise
+# make a panel reboot stop the pump and close the shed valve: at boot nothing is
+# known yet, so every rule reads "not permitted".
+#
+# The user-visible rule is that a source must have been silent for a timeout, not
+# that the panel has just started. So the interlocks publish nothing until the
+# transport has had time to settle: Wi-Fi association, the panel's first ping
+# broadcast, and a provider's next broadcast carrying the pong. That is roughly
+# 15-20s with a 5s update_interval, and 30s leaves margin.
+#
+# Until armed, every *_permitted sensor has no state at all. Nothing can be turned
+# on, because the request scripts refuse without a state, and nothing is turned
+# off, because no rule has published a false yet. A relay already running keeps
+# running across a panel reboot.
+
+globals:
+  - id: interlocks_armed
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+esphome:
+  on_boot:
+    # After every component is set up. The delay does not block other automations.
+    - priority: -100
+      then:
+        - delay: 30s
+        - globals.set:
+            id: interlocks_armed
+            value: "true"
+        - logger.log: "Interlocks armed"

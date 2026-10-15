@@ -1,0 +1,16 @@
+# Panel coordination: what the panel is allowed to command, and when it withdraws
+# a command on its own.
+#
+# One package per actuator. Each one publishes a *_permitted binary sensor that is
+# the whole interlock condition, and a pair of request scripts that are the only
+# entry points for commanding that actuator. The UI calls those scripts; it does
+# not publish requests itself.
+#
+# House and shed transfer stay separate on purpose. Shed transfer has no
+# pump-contactor step and must not gain one.
+
+packages:
+  arming: !include arming.yaml
+  header_valve: !include header-valve.yaml
+  house_transfer: !include house-transfer.yaml
+  shed_transfer: !include shed-transfer.yaml

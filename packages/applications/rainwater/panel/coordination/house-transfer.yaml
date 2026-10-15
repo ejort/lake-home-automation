@@ -1,0 +1,66 @@
+# House transfer interlock: the house collection tank pumps into the header tank.
+#
+# The pump may run only while all of these hold:
+#   - the header tank is below 100%
+#   - the house collection tank is above 0%
+#   - the header tank valve reports open
+#   - the pump and both tanks are reachable, and both levels are readable
+#
+# house_pump_permitted is that whole condition. Losing it stops the pump, which
+# covers every "must be automatically turned off" rule at once, including the
+# header valve closing under a running pump. Nothing here ever starts the pump;
+# that is always a button press.
+
+binary_sensor:
+  - platform: template
+    id: house_pump_permitted
+    # The first state is published when the interlocks arm, and if it is false the
+    # pump has to stop then and there. ESPHome skips triggers for the first state
+    # unless this is set.
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(interlocks_armed)) {
+        return {};
+      }
+      if (!id(house_pump_online).state || !id(header_tank_online).state ||
+          !id(house_tank_online).state) {
+        return false;
+      }
+      const float header = id(header_tank_level).state;
+      const float house = id(house_tank_level).state;
+      if (isnan(header) || isnan(house)) {
+        return false;
+      }
+      if (header >= 100.0f || house <= 0.0f) {
+        return false;
+      }
+      return id(header_valve_reported).state;
+    on_release:
+      - logger.log:
+          level: WARN
+          format: "House pump interlock lost; requesting pump off"
+      - script.execute: request_house_pump_off
+
+script:
+  # The guard lives here, not on the widget, so a stale button cannot bypass it.
+  - id: request_house_pump_on
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(house_pump_permitted).has_state() &&
+                     id(house_pump_permitted).state;
+          then:
+            - binary_sensor.template.publish:
+                id: house_pump_run_requested
+                state: true
+          else:
+            - logger.log:
+                level: WARN
+                format: "House pump start refused; interlock not satisfied"
+
+  - id: request_house_pump_off
+    then:
+      - binary_sensor.template.publish:
+          id: house_pump_run_requested
+          state: false

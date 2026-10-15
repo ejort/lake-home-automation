@@ -1,7 +1,8 @@
 # Pump side of the panel link. The panel broadcasts house_pump_run_requested as a
 # held level; this node follows it and reports the relay back as pump_relay_reported.
 # Triggers fire on change only, so a repeated broadcast does not fight a local
-# change made on this node's own web page.
+# change made on this node's own web page. A held "off" request is the exception:
+# the interval below re-asserts it, because the panel's interlocks depend on it.
 # Reported state is the coil output. There is no contactor auxiliary or flow proof.
 # Losing Wi-Fi does not change the relay, and nothing here limits run time.
 
@@ -21,6 +22,10 @@ binary_sensor:
   - platform: packet_transport
     provider: lake-control
     id: house_pump_run_requested
+    # The first packet after a boot carries whatever the panel is holding, and
+    # acting on it is the whole point of a held level. ESPHome skips triggers for
+    # the first state unless this is set.
+    trigger_on_initial_state: true
     on_press:
       - switch.turn_on: pump_relay
     on_release:
@@ -28,7 +33,8 @@ binary_sensor:
 
   - platform: template
     id: pump_relay_reported
-    publish_initial_state: false
+    # Reported over the transport only. Nothing local acts on it.
+    trigger_on_initial_state: false
 
 switch:
   # Adds reporting to the relay defined in packages/features/pump-control.yaml.
@@ -41,6 +47,24 @@ switch:
       - binary_sensor.template.publish:
           id: pump_relay_reported
           state: false
+
+interval:
+  # The panel stops the pump automatically on header full, house empty, header
+  # valve closed, or a tank going silent, so a held "off" request has to win over a
+  # relay switched on from this node's own web page. On_release alone would miss
+  # that, because it fires on change only.
+  # Only "off" is re-asserted: a stale "on" must not fight a local stop.
+  - interval: 5s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(house_pump_run_requested).has_state() &&
+                     !id(house_pump_run_requested).state &&
+                     id(pump_relay).state;
+          then:
+            - logger.log: "Panel requests house pump off; opening contactor"
+            - switch.turn_off: pump_relay
 
 esphome:
   on_boot:

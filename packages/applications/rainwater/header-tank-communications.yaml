@@ -1,0 +1,62 @@
+# Header tank side of the panel link. This node publishes tank_level and
+# valve_relay_reported; the panel broadcasts header_valve_open_requested as a held
+# level and this node follows it.
+# Triggers fire on change only, so a repeated broadcast does not fight a local
+# change made on this node's own web page.
+# Reported state is the relay coil. There is no valve end-stop or flow proof.
+# No interlock rule closes this valve automatically, so there is no interval
+# re-assert here; the pump stops instead when this valve reports closed.
+
+packet_transport:
+  - platform: udp
+    udp_id: site_udp
+    update_interval: 5s
+    encryption: !secret packet_transport_key
+    rolling_code_enable: true
+    sensors:
+      - tank_level
+    binary_sensors:
+      - valve_relay_reported
+    providers:
+      - name: lake-control
+        encryption: !secret packet_transport_key
+
+binary_sensor:
+  - platform: packet_transport
+    provider: lake-control
+    id: valve_open_requested
+    remote_id: header_valve_open_requested
+    # The first packet after a boot carries whatever the panel is holding, and
+    # acting on it is the whole point of a held level. ESPHome skips triggers for
+    # the first state unless this is set.
+    trigger_on_initial_state: true
+    on_press:
+      - switch.turn_on: valve_relay
+    on_release:
+      - switch.turn_off: valve_relay
+
+  - platform: template
+    id: valve_relay_reported
+    # Reported over the transport only. Nothing local acts on it.
+    trigger_on_initial_state: false
+
+switch:
+  # Adds reporting to the relay defined in packages/features/valve-control.yaml.
+  - id: !extend valve_relay
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: valve_relay_reported
+          state: true
+    on_turn_off:
+      - binary_sensor.template.publish:
+          id: valve_relay_reported
+          state: false
+
+esphome:
+  on_boot:
+    # After GPIO setup, so this reports the restored relay state.
+    - priority: 400
+      then:
+        - binary_sensor.template.publish:
+            id: valve_relay_reported
+            state: !lambda return id(valve_relay).state;

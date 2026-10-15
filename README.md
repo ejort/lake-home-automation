@@ -8,7 +8,7 @@ Five devices make up the system:
 - **House collection tank controller** — rainwater tank. Reads level. No valve relay on this board. House transfer is the pump controller.
 - **Shed collection tank controller** — rainwater tank. Opening its valve lets the shed's existing pressure-switch pump transfer water.
 - **House transfer pump controller** — switches the contactor for the house transfer pump.
-- **Water Management Panel** — Guition ESP32-S3-4848S040. It is the intended coordinator and touch UI. The screen still runs the board bring-up page.
+- **Water Management Panel** — Guition ESP32-S3-4848S040. The coordinator and touch UI. It reads all three tank levels, commands the header valve, the house pump, and the shed valve, and holds the interlocks that decide when each may run.
 
 `first-flash.yaml` is a minimal image for the first USB flash of a new relay-board ESP32, before it can take OTA updates.
 
@@ -26,12 +26,17 @@ packages/
   common/          base, Wi-Fi, diagnostics
   hardware/        relay board, tank interface, Guition panel
   features/        pressure current and tank level, valve relay, pump relay
+  communications/  shared UDP socket for packet transport
   applications/rainwater/
     header-tank.yaml
-    collection-tank.yaml
     house-collection-tank.yaml
+    shed-collection-tank.yaml
     transfer-pump.yaml
-    panel/         panel application and LVGL UI
+    *-communications.yaml   what each field node publishes and receives
+    panel/
+      communications.yaml   what the panel publishes and receives
+      coordination/         interlocks and request scripts
+      ui/                   LVGL screen
 
 assets/fonts/      Material Design Icons used by the panel
 docs/              inventory, system behaviour, commissioning, wiring
@@ -40,7 +45,7 @@ secrets.yaml       local only, not committed
 
 Device files stay small: node name, friendly name, package selection, and installation overrides such as `wifi.use_address`. GPIO maps stay in hardware packages. Pressure math, valve relay, and pump relay stay in feature packages. Per-tank level calibration is not in YAML at all; it is set on each board. Tank role notes stay in the rainwater application packages.
 
-There is no device-to-device transport in the tree yet. See `docs/rainwater-system.md` before adding ESPHome packet transport.
+Every node is on one UDP packet transport. See `docs/rainwater-system.md` before changing what crosses it.
 
 ## Package relationships
 
@@ -50,14 +55,18 @@ Every device includes `packages/common/base.yaml`, which includes Wi-Fi and diag
 | --- | --- |
 | `header-tank-controller.yaml` | relay board, tank interface, `rainwater/header-tank.yaml` |
 | `house-tank-controller.yaml` | relay board, tank interface, `rainwater/house-collection-tank.yaml` |
-| `shed-tank-controller.yaml` | relay board, tank interface, `rainwater/collection-tank.yaml` |
+| `shed-tank-controller.yaml` | relay board, tank interface, `rainwater/shed-collection-tank.yaml` |
 | `house-transfer-pump-controller.yaml` | relay board, `rainwater/transfer-pump.yaml` |
 | `water-management-panel.yaml` | `guition-esp32-s3-4848s040.yaml`, `rainwater/panel/main.yaml` |
 | `first-flash.yaml` | base only, plus a bare ESP32 block |
 
-`header-tank.yaml` and `collection-tank.yaml` include valve control and the pressure level feature, which publishes current and percent full. `house-collection-tank.yaml` includes pressure level only; that board has no valve relay. `transfer-pump.yaml` includes pump control. `panel/main.yaml` includes the LVGL UI. Valve control and pump control both use GPIO16, so a device includes only one of them.
+`header-tank.yaml` and `shed-collection-tank.yaml` include valve control and the pressure level feature, which publishes current and percent full. `house-collection-tank.yaml` includes pressure level only; that board has no valve relay. `transfer-pump.yaml` includes pump control. Valve control and pump control both use GPIO16, so a device includes only one of them.
 
-Node names are not the same as every filename. `water-management-panel.yaml` builds node `lake-control`. `house-transfer-pump-controller.yaml` builds node `house-pump-controller`. Details and proposed renames are in `docs/inventory.md`.
+Every application package also includes the shared UDP socket and its own communications package, which is the only place a node's broadcast and received ids live.
+
+`panel/main.yaml` stacks three layers that only go one way. `communications.yaml` carries state, `coordination/` decides what may be commanded from that state, and `ui/` draws it and calls the request scripts. The UI never publishes a request itself, and coordination never touches a widget.
+
+Node names are not the same as every filename. `water-management-panel.yaml` builds node `lake-control`. `house-transfer-pump-controller.yaml` builds node `house-pump-controller`. Provider names on the transport are node names, so those are the names that appear in the communications packages. Details and proposed renames are in `docs/inventory.md`.
 
 ## Secrets
 
@@ -79,7 +88,11 @@ Docker is required. From the repo root:
 
 Pass more than one name to compile and upload several devices in order. With no arguments, the script lists the configs it can build. The script uploads; do not point it at a board unless that upload is intended.
 
-`esphome config <file>.yaml` checks a config without compiling or flashing.
+`esphome config <file>.yaml` checks a config without compiling or flashing. Use the pinned image, because the repo uses options newer than many local installs:
+
+```bash
+docker run --rm -v "$PWD":/config ghcr.io/esphome/esphome:2026.9.1 config /config/water-management-panel.yaml
+```
 
 ## Add a device
 
@@ -88,4 +101,5 @@ Pass more than one name to compile and upload several devices in order. With no 
 3. Set `friendly_name`.
 4. Include `packages/common/base.yaml` and the hardware package that matches the board. Include one application package.
 5. Put installation-only settings in the new file: `wifi.use_address`. Do not copy GPIO maps into the device file. Level calibration is set on the board after flashing, not here; see `docs/commissioning.md`.
-6. Validate with `esphome config`, then compile. Flash only when the node name and `use_address` match the board you intend to update.
+6. To put it on the transport, give it a communications package of its own and include `packages/communications/udp.yaml`. Add it to the panel's `providers` list by node name.
+7. Validate with `esphome config`, then compile. Flash only when the node name and `use_address` match the board you intend to update.

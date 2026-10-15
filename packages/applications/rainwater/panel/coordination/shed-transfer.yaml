@@ -1,0 +1,61 @@
+# Shed transfer interlock: opening the shed tank valve lets the shed's own
+# pressure-switch pump push water into the header tank. There is no contactor to
+# command, so this sequence must never grow a pump step.
+#
+# The valve may be open only while all of these hold:
+#   - the header tank is below 100%
+#   - the shed collection tank is above 0%
+#   - both tanks are reachable, and both levels are readable
+#
+# Losing that closes the valve, which covers both "must be automatically closed"
+# rules. Nothing here ever opens the valve; that is always a button press.
+
+binary_sensor:
+  - platform: template
+    id: shed_valve_permitted
+    # The first state is published when the interlocks arm, and if it is false the
+    # valve has to close then and there. ESPHome skips triggers for the first
+    # state unless this is set.
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(interlocks_armed)) {
+        return {};
+      }
+      if (!id(shed_tank_online).state || !id(header_tank_online).state) {
+        return false;
+      }
+      const float header = id(header_tank_level).state;
+      const float shed = id(shed_tank_level).state;
+      if (isnan(header) || isnan(shed)) {
+        return false;
+      }
+      return header < 100.0f && shed > 0.0f;
+    on_release:
+      - logger.log:
+          level: WARN
+          format: "Shed transfer interlock lost; requesting shed valve closed"
+      - script.execute: request_shed_valve_close
+
+script:
+  # The guard lives here, not on the widget, so a stale button cannot bypass it.
+  - id: request_shed_valve_open
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(shed_valve_permitted).has_state() &&
+                     id(shed_valve_permitted).state;
+          then:
+            - binary_sensor.template.publish:
+                id: shed_valve_open_requested
+                state: true
+          else:
+            - logger.log:
+                level: WARN
+                format: "Shed valve open refused; interlock not satisfied"
+
+  - id: request_shed_valve_close
+    then:
+      - binary_sensor.template.publish:
+          id: shed_valve_open_requested
+          state: false

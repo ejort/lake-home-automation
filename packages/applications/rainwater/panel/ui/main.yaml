@@ -1,54 +1,57 @@
-# Bring-up UI preserved from the Guition board config, plus the house pump button.
-# The pump button requests run state over UDP; it is not the rainwater status UI.
-# Water overview, tank, transfer, settings, and alarm pages are not built yet.
-# Widget handlers must not grow transfer sequences; those belong in panel coordination.
+# Water status and control screen. Replaces the Guition bring-up page.
+#
+# Six tiles on a 480x480 grid: a level gauge per tank on the top row, and the
+# actuator that sits under each tank on the bottom row. Header valve under header
+# tank, house pump under house collection tank, shed valve under shed tank.
+#
+# The widgets show state and nothing else. Buttons call the request scripts in
+# coordination/; they never publish a request or drive a remote relay inline, and
+# the disabled state here is cosmetic because the real guard is in those scripts.
+#
+# A button is disabled only while its actuator is both off and not permitted, so
+# anything that is running can always be stopped by hand.
 
 substitutions:
-  lightbulb: "\U000F0335"
-  ceiling_light: "\U000F0769"
-  lamp: "\U000F06B5"
-  water_pump: "\U000F058F"
-  floor_lamp: "\U000F08DD"
-  string_lights: "\U000F12BA"
+  icon_tank: "\U000F058C" # mdi-water
+  icon_valve: "\U000F1066" # mdi-valve
+  icon_pump: "\U000F058F" # mdi-water-pump
+
+  colour_screen: "0x000000"
+  colour_tile: "0x1A1A1A"
+  colour_control: "0x313131"
+  colour_active: "0xCC5E14"
+  colour_water: "0x42A5F5"
+  colour_text: "0xB6B6B6"
+  colour_text_bright: "0xFFFFFF"
+  colour_text_dim: "0x5A5A5A"
 
 # LVGL comes from ESPHome 2026.9. The previous pin of clydebarrow/esphome
 # 82264dc does not compile against current ESPHome (esph_log_e macro).
 
 font:
   - file: "gfonts://Roboto"
-    id: roboto24
-    size: 24
+    id: font_title
+    size: 20
     bpp: 4
-    extras:
-      - file: "assets/fonts/materialdesignicons-webfont.ttf" # http://materialdesignicons.com/cdn/7.4.47/
-        glyphs:
-          [
-            "\U000F004B",
-            #"\U0000f0ed",
-            "\U000F006E",
-            "\U000F012C",
-            "\U000F179B",
-            "\U000F0748",
-            "\U000F1A1B",
-            "\U000F02DC",
-            "\U000F0A02",
-            "\U000F035F",
-            "\U000F0156",
-            "\U000F0C5F",
-            "\U000f0084",
-            "\U000f0091",
-          ]
+
+  - file: "gfonts://Roboto"
+    id: font_status
+    size: 16
+    bpp: 4
+
+  - file: "gfonts://Roboto"
+    id: font_reading
+    size: 28
+    bpp: 4
 
   - file: "assets/fonts/materialdesignicons-webfont.ttf" # http://materialdesignicons.com/cdn/7.4.47/
-    id: light40
-    size: 40
+    id: font_icon
+    size: 32
     bpp: 4
-    glyphs: [
-        "\U000F0335", # mdi-lightbulb
-        "\U000F0769", # mdi-ceiling-light
-        "\U000F06B5", # mdi-lamp
-        "\U000F08DD", # mdi-floor-lamp
-        "\U000F12BA", # mdi-string-lights
+    glyphs:
+      [
+        "\U000F058C", # mdi-water
+        "\U000F1066", # mdi-valve
         "\U000F058F", # mdi-water-pump
       ]
 
@@ -58,102 +61,211 @@ lvgl:
     - my_display
   touchscreens:
     - my_touchscreen
-  on_idle:
-    - timeout: 10s
-      then:
-        - logger.log: idle timeout
-        - if:
-            condition:
-              lvgl.is_idle:
-                timeout: 5s
-            then:
-              - logger.log: LVGL is idle
-    - timeout: 15s
-      then:
-        - logger.log: idle 15s timeout
-
-      #- lvgl.pause:
-      #- light.turn_off:
-      #    id: display_backlight
-      #    transition_length: 5s
-
-  style_definitions:
-    - id: style_line
-      line_color: 0x0000FF
-      line_width: 8
-      line_rounded: true
-    - id: date_style
-      text_font: roboto24
-      align: center
-      text_color: 0x333333
-      bg_opa: cover
-      radius: 4
-      pad_all: 2
 
   theme:
     button:
-      text_font: roboto24
+      text_font: font_title
       scroll_on_focus: true
       group: general
-      radius: 25
-      width: 150
-      height: 109
-      pad_left: 10px
-      pad_top: 10px
-      pad_bottom: 10px
-      pad_right: 10px
+      radius: 12
+      pad_all: 10
+      border_width: 0
       shadow_width: 0
-      bg_color: 0x313131
-      text_color: 0xB6B6B6
+      bg_color: $colour_control
+      bg_opa: cover
+      text_color: $colour_text
       checked:
-        bg_color: 0xCC5E14
-        text_color: 0xB6B6B6
+        bg_color: $colour_active
+        text_color: $colour_text_bright
+      disabled:
+        bg_color: $colour_tile
+        text_color: $colour_text_dim
 
-  page_wrap: true
   pages:
     - id: main_page
-      # The bring-up page was skip: true. ESPHome requires one page that is not skipped.
+      # ESPHome requires one page that is not skipped.
       skip: false
-      layout:
-        type: flex
-        flex_flow: column_wrap
-      width: 100%
-      bg_color: 0x000000
+      bg_color: $colour_screen
       bg_opa: cover
-      pad_all: 5
+      text_color: $colour_text
+      pad_all: 6
+      scrollable: false
+      layout:
+        type: grid
+        grid_rows: [FR(7), FR(3)]
+        grid_columns: [FR(1), FR(1), FR(1)]
+        grid_cell_x_align: stretch
+        grid_cell_y_align: stretch
+        pad_row: 6
+        pad_column: 6
       widgets:
-        - button:
-            height: 223
-            checkable: true
-            id: lv_button_1
+        - obj:
+            id: header_tank_tile
+            grid_cell_row_pos: 0
+            grid_cell_column_pos: 0
+            bg_color: $colour_tile
+            bg_opa: cover
+            border_width: 0
+            radius: 12
+            pad_all: 8
+            scrollable: false
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_between
+              flex_align_cross: center
+              pad_row: 6
             widgets:
               - label:
-                  text_font: light40
-                  align: top_left
-                  text: $lightbulb
-                  id: lv_button_1_icon
+                  text: "Header"
+                  text_font: font_title
+              - bar:
+                  id: header_tank_bar
+                  width: 52
+                  flex_grow: 1
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  radius: 8
+                  bg_color: $colour_control
+                  bg_opa: cover
+                  indicator:
+                    bg_color: $colour_water
+                    bg_opa: cover
+                    radius: 8
               - label:
-                  align: bottom_left
-                  text: "Center Light"
-                  long_mode: dot
-            on_click:
-              light.toggle: internal_light
+                  id: header_tank_reading
+                  text: "--"
+                  text_font: font_reading
+
+        - obj:
+            id: house_tank_tile
+            grid_cell_row_pos: 0
+            grid_cell_column_pos: 1
+            bg_color: $colour_tile
+            bg_opa: cover
+            border_width: 0
+            radius: 12
+            pad_all: 8
+            scrollable: false
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_between
+              flex_align_cross: center
+              pad_row: 6
+            widgets:
+              - label:
+                  text: "House"
+                  text_font: font_title
+              - bar:
+                  id: house_tank_bar
+                  width: 52
+                  flex_grow: 1
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  radius: 8
+                  bg_color: $colour_control
+                  bg_opa: cover
+                  indicator:
+                    bg_color: $colour_water
+                    bg_opa: cover
+                    radius: 8
+              - label:
+                  id: house_tank_reading
+                  text: "--"
+                  text_font: font_reading
+
+        - obj:
+            id: shed_tank_tile
+            grid_cell_row_pos: 0
+            grid_cell_column_pos: 2
+            bg_color: $colour_tile
+            bg_opa: cover
+            border_width: 0
+            radius: 12
+            pad_all: 8
+            scrollable: false
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_between
+              flex_align_cross: center
+              pad_row: 6
+            widgets:
+              - label:
+                  text: "Shed"
+                  text_font: font_title
+              - bar:
+                  id: shed_tank_bar
+                  width: 52
+                  flex_grow: 1
+                  min_value: 0
+                  max_value: 100
+                  value: 0
+                  radius: 8
+                  bg_color: $colour_control
+                  bg_opa: cover
+                  indicator:
+                    bg_color: $colour_water
+                    bg_opa: cover
+                    radius: 8
+              - label:
+                  id: shed_tank_reading
+                  text: "--"
+                  text_font: font_reading
 
         - button:
-            height: 223
-            checkable: true
-            id: lv_button_pump
+            id: header_valve_button
+            grid_cell_row_pos: 1
+            grid_cell_column_pos: 0
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: center
+              flex_align_cross: center
+              pad_row: 2
             widgets:
               - label:
-                  text_font: light40
-                  align: top_left
-                  text: $water_pump
-                  id: lv_button_pump_icon
+                  text_font: font_icon
+                  text: $icon_valve
               - label:
-                  align: bottom_left
+                  text: "Header Valve"
+              - label:
+                  id: header_valve_status
+                  text_font: font_status
+                  text: "Starting"
+            # Command the opposite of what the node last reported.
+            on_click:
+              - if:
+                  condition:
+                    binary_sensor.is_on: header_valve_reported
+                  then:
+                    - script.execute: request_header_valve_close
+                  else:
+                    - script.execute: request_header_valve_open
+
+        - button:
+            id: house_pump_button
+            grid_cell_row_pos: 1
+            grid_cell_column_pos: 1
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: center
+              flex_align_cross: center
+              pad_row: 2
+            widgets:
+              - label:
+                  text_font: font_icon
+                  text: $icon_pump
+              - label:
                   text: "House Pump"
-                  long_mode: dot
-            # Command the opposite of what the pump last reported.
+              - label:
+                  id: house_pump_status
+                  text_font: font_status
+                  text: "Starting"
             on_click:
               - if:
                   condition:
@@ -163,47 +275,279 @@ lvgl:
                   else:
                     - script.execute: request_house_pump_on
 
+        - button:
+            id: shed_valve_button
+            grid_cell_row_pos: 1
+            grid_cell_column_pos: 2
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: center
+              flex_align_cross: center
+              pad_row: 2
+            widgets:
+              - label:
+                  text_font: font_icon
+                  text: $icon_valve
+              - label:
+                  text: "Shed Valve"
+              - label:
+                  id: shed_valve_status
+                  text_font: font_status
+                  text: "Starting"
+            on_click:
+              - if:
+                  condition:
+                    binary_sensor.is_on: shed_valve_reported
+                  then:
+                    - script.execute: request_shed_valve_close
+                  else:
+                    - script.execute: request_shed_valve_open
+
+script:
+  # Gauges. A level is only a number when its node is reachable and its board has
+  # a calibration that resolves, so offline and unreadable are drawn differently.
+  - id: refresh_gauges
+    then:
+      - lvgl.bar.update:
+          id: header_tank_bar
+          value: !lambda |-
+            const float level = id(header_tank_level).state;
+            return isnan(level) ? 0 : (int) lroundf(level);
+      - lvgl.label.update:
+          id: header_tank_reading
+          text: !lambda |-
+            if (!id(header_tank_online).state) {
+              return std::string("Offline");
+            }
+            const float level = id(header_tank_level).state;
+            if (isnan(level)) {
+              return std::string("--");
+            }
+            char buffer[8];
+            snprintf(buffer, sizeof(buffer), "%.0f%%", level);
+            return std::string(buffer);
+
+      - lvgl.bar.update:
+          id: house_tank_bar
+          value: !lambda |-
+            const float level = id(house_tank_level).state;
+            return isnan(level) ? 0 : (int) lroundf(level);
+      - lvgl.label.update:
+          id: house_tank_reading
+          text: !lambda |-
+            if (!id(house_tank_online).state) {
+              return std::string("Offline");
+            }
+            const float level = id(house_tank_level).state;
+            if (isnan(level)) {
+              return std::string("--");
+            }
+            char buffer[8];
+            snprintf(buffer, sizeof(buffer), "%.0f%%", level);
+            return std::string(buffer);
+
+      - lvgl.bar.update:
+          id: shed_tank_bar
+          value: !lambda |-
+            const float level = id(shed_tank_level).state;
+            return isnan(level) ? 0 : (int) lroundf(level);
+      - lvgl.label.update:
+          id: shed_tank_reading
+          text: !lambda |-
+            if (!id(shed_tank_online).state) {
+              return std::string("Offline");
+            }
+            const float level = id(shed_tank_level).state;
+            if (isnan(level)) {
+              return std::string("--");
+            }
+            char buffer[8];
+            snprintf(buffer, sizeof(buffer), "%.0f%%", level);
+            return std::string(buffer);
+
+  # Buttons. Checked follows the relay each node reports, so it also tracks a
+  # change made on that node's own web page. The status line names the first
+  # unmet interlock condition, in the same order the interlock checks them.
+  - id: refresh_controls
+    then:
+      - lvgl.widget.update:
+          id: header_valve_button
+          state:
+            checked: !lambda return id(header_valve_reported).state;
+            disabled: !lambda |-
+              const bool permitted = id(header_valve_permitted).has_state() &&
+                                     id(header_valve_permitted).state;
+              return !permitted && !id(header_valve_reported).state;
+      - lvgl.label.update:
+          id: header_valve_status
+          text: !lambda |-
+            if (!id(interlocks_armed)) {
+              return std::string("Starting");
+            }
+            if (!id(header_tank_online).state) {
+              return std::string("Offline");
+            }
+            return id(header_valve_reported).state ? std::string("Open")
+                                                   : std::string("Closed");
+
+      - lvgl.widget.update:
+          id: house_pump_button
+          state:
+            checked: !lambda return id(pump_relay_reported).state;
+            disabled: !lambda |-
+              const bool permitted = id(house_pump_permitted).has_state() &&
+                                     id(house_pump_permitted).state;
+              return !permitted && !id(pump_relay_reported).state;
+      - lvgl.label.update:
+          id: house_pump_status
+          text: !lambda |-
+            if (id(pump_relay_reported).state) {
+              return std::string("Running");
+            }
+            if (!id(interlocks_armed)) {
+              return std::string("Starting");
+            }
+            if (id(house_pump_permitted).state) {
+              return std::string("Ready");
+            }
+            if (!id(house_pump_online).state) {
+              return std::string("Pump offline");
+            }
+            if (!id(header_tank_online).state) {
+              return std::string("Header offline");
+            }
+            if (!id(house_tank_online).state) {
+              return std::string("House offline");
+            }
+            if (isnan(id(header_tank_level).state) ||
+                isnan(id(house_tank_level).state)) {
+              return std::string("No level");
+            }
+            if (id(header_tank_level).state >= 100.0f) {
+              return std::string("Header full");
+            }
+            if (id(house_tank_level).state <= 0.0f) {
+              return std::string("House empty");
+            }
+            return std::string("Valve closed");
+
+      - lvgl.widget.update:
+          id: shed_valve_button
+          state:
+            checked: !lambda return id(shed_valve_reported).state;
+            disabled: !lambda |-
+              const bool permitted = id(shed_valve_permitted).has_state() &&
+                                     id(shed_valve_permitted).state;
+              return !permitted && !id(shed_valve_reported).state;
+      - lvgl.label.update:
+          id: shed_valve_status
+          text: !lambda |-
+            if (id(shed_valve_reported).state) {
+              return std::string("Open");
+            }
+            if (!id(interlocks_armed)) {
+              return std::string("Starting");
+            }
+            if (id(shed_valve_permitted).state) {
+              return std::string("Closed");
+            }
+            if (!id(shed_tank_online).state) {
+              return std::string("Shed offline");
+            }
+            if (!id(header_tank_online).state) {
+              return std::string("Header offline");
+            }
+            if (isnan(id(header_tank_level).state) ||
+                isnan(id(shed_tank_level).state)) {
+              return std::string("No level");
+            }
+            if (id(header_tank_level).state >= 100.0f) {
+              return std::string("Header full");
+            }
+            return std::string("Shed empty");
+
+sensor:
+  # A level arriving is the only thing that moves a gauge.
+  - id: !extend header_tank_level
+    on_value:
+      - script.execute: refresh_gauges
+
+  - id: !extend house_tank_level
+    on_value:
+      - script.execute: refresh_gauges
+
+  - id: !extend shed_tank_level
+    on_value:
+      - script.execute: refresh_gauges
+
 binary_sensor:
-  # The button follows the pump's reported relay, not the local request, so it
-  # also tracks changes made on the pump itself.
+  # Link state changes both the gauge text and which buttons are usable.
+  - id: !extend header_tank_online
+    on_press:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+
+  - id: !extend house_tank_online
+    on_press:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+
+  - id: !extend shed_tank_online
+    on_press:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_gauges
+      - script.execute: refresh_controls
+
+  - id: !extend house_pump_online
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls
+
   - id: !extend pump_relay_reported
     on_press:
-      - lvgl.widget.update:
-          id: lv_button_pump_icon
-          text_color: 0x42A5F5
-      - lvgl.widget.update:
-          id: lv_button_pump
-          state:
-            checked: true
+      - script.execute: refresh_controls
     on_release:
-      - lvgl.widget.update:
-          id: lv_button_pump_icon
-          text_color: 0xB6B6B6
-      - lvgl.widget.update:
-          id: lv_button_pump
-          state:
-            checked: false
+      - script.execute: refresh_controls
 
-light:
-  - platform: binary
-    output: internal_relay_1
-    name: Internal Light
-    id: internal_light
-    on_turn_on:
-      then:
-        - lvgl.widget.update:
-            id: lv_button_1_icon
-            text_color: 0xFFFF00
-        - lvgl.widget.update:
-            id: lv_button_1
-            state:
-              checked: true
-    on_turn_off:
-      then:
-        - lvgl.widget.update:
-            id: lv_button_1_icon
-            text_color: 0xB6B6B6
-        - lvgl.widget.update:
-            id: lv_button_1
-            state:
-              checked: false
+  - id: !extend header_valve_reported
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls
+
+  - id: !extend shed_valve_reported
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls
+
+  # Arming and every interlock transition. house_pump_permitted and
+  # shed_valve_permitted also carry the auto-off in coordination/; these triggers
+  # are appended to those.
+  - id: !extend header_valve_permitted
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls
+
+  - id: !extend house_pump_permitted
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls
+
+  - id: !extend shed_valve_permitted
+    on_press:
+      - script.execute: refresh_controls
+    on_release:
+      - script.execute: refresh_controls

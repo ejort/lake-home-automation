@@ -27,7 +27,7 @@ Tank controllers also carry the pressure interface. The pump controller does not
 | Function | GPIO | Notes |
 | --- | --- | --- |
 | Backlight PWM | GPIO38 | LEDC 100 Hz. Light `Backlight`, `ALWAYS_ON` |
-| Relay 1 | GPIO40 | Built-in 240 V relay. Drives `Internal Light` |
+| Relay 1 | GPIO40 | Built-in 240 V relay. Output only, no switch entity since the bring-up page was replaced |
 | Relay 2 | GPIO2 | Output only, no switch entity |
 | Relay 3 | GPIO1 | Output only, no switch entity |
 | Touch I2C SDA | GPIO19 | GT911, bus `bus_a` |

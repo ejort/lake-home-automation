@@ -30,9 +30,13 @@ Affected references:
 - Restart button text: `Restart ${friendly_name}`.
 - Fallback AP SSID. The shared default is still `${friendly_name} Hotspot`. House tank, shed tank, and house pump override it with `<node-name> Hotspot` because the new friendly names make that string longer than 32 characters.
 
-Unchanged entity names on the controllers that still publish them: `Valve Relay` (header and shed tanks), `LED Switch`, `Pressure Sensor Voltage`, `Pressure Sensor Current`, `Backlight`, `Internal Light`, diagnostics (`Uptime`, `ESPHome Version`, Wi-Fi, IP).
+Unchanged entity names on the controllers that still publish them: `Valve Relay` (header and shed tanks), `LED Switch`, `Pressure Sensor Voltage`, `Pressure Sensor Current`, `Backlight`, diagnostics (`Uptime`, `ESPHome Version`, Wi-Fi, IP).
 
 New on the three tank controllers: sensor `Tank Level` (%), and config numbers `Level Empty Current` and `Level Full Current` (mA). They appear on the next upload. Calibration is per board and lives in flash, so each tank keeps its own values. See `docs/commissioning.md`.
+
+New on the panel: binary sensors `Header Tank Link`, `House Tank Link`, `Shed Tank Link`, and `House Pump Link`. These are the packet transport ping-pong status for each field node and are the only way to see which node the panel has stopped hearing.
+
+Dropped from the panel: `Internal Light`. It existed only for the Center Light bring-up button, which the water control screen replaces. GPIO40 is still configured as an output in the hardware package, with nothing driving it.
 
 `house-pump-controller` no longer includes the ADS1115 pressure sensors. That interface was copied from the tank template. The pump file now includes only the relay board and the contactor relay. Dropped entities on the next upload, if they were adopted: Pressure Sensor Voltage, Pressure Sensor Current.
 

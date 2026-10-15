@@ -1,6 +1,9 @@
 # House rainwater collection tank. This board reads level only.
 # No valve relay is fitted, so GPIO16 stays unconfigured.
 # House transfer is the separate pump controller.
+# This node publishes its level so the panel can interlock that pump.
 
 packages:
   level: !include ../../features/pressure-level.yaml
+  udp: !include ../../communications/udp.yaml
+  communications: !include house-collection-tank-communications.yaml

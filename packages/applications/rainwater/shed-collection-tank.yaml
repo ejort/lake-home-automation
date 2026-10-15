@@ -1,6 +1,9 @@
 # Shed rainwater collection tank. The local action is opening or closing this tank's valve.
 # Opening the valve lets the shed's existing pressure-switch pump transfer water.
+# The panel owns when that valve may open; this node follows its held request.
 
 packages:
   valve: !include ../../features/valve-control.yaml
   level: !include ../../features/pressure-level.yaml
+  udp: !include ../../communications/udp.yaml
+  communications: !include shed-tank-communications.yaml

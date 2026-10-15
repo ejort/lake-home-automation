@@ -1,0 +1,12 @@
+# House collection tank side of the panel link. This board has no valve relay, so
+# it only publishes tank_level and receives nothing.
+# The panel needs this level to hold the house pump off once the tank is empty.
+
+packet_transport:
+  - platform: udp
+    udp_id: site_udp
+    update_interval: 5s
+    encryption: !secret packet_transport_key
+    rolling_code_enable: true
+    sensors:
+      - tank_level

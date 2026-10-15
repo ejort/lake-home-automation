@@ -1,8 +1,12 @@
-# Panel side of the house pump link. The panel owns the request; the pump owns the relay.
-# house_pump_run_requested is a held level, not a toggle, so a repeated broadcast is
-# harmless. pump_relay_reported is what the pump says its relay is doing.
-# UI handlers call the request scripts. They must not drive a remote relay inline.
-# Nothing here sequences a transfer. The house collection tank has no valve relay.
+# Panel side of the site link. The panel owns every request; field nodes own their
+# relays.
+# The *_requested binary sensors are held levels, not toggles, so a repeated
+# broadcast is harmless. The *_reported sensors are what each node says its relay
+# is doing, and stay separate from any future end-stop or flow proof.
+# The *_online sensors come from the packet transport ping-pong handshake and are
+# the only heartbeat in the system. A node silent for ping_pong_recycle_time reads
+# offline, and the interlocks in coordination/ treat that as unsafe.
+# Nothing here decides anything. Publishing a request is coordination's job.
 
 packet_transport:
   - platform: udp
@@ -10,31 +14,104 @@ packet_transport:
     update_interval: 5s
     encryption: !secret packet_transport_key
     rolling_code_enable: true
+    # Consumer side. Providers must echo this nonce, which is what makes the
+    # status sensors below meaningful.
+    # A provider reads offline after twice this time without a pong, so 30s here
+    # is a 60s detection window. Shorter costs a rejected packet per provider per
+    # cycle, when a broadcast crosses a freshly regenerated key.
+    ping_pong_enable: true
+    ping_pong_recycle_time: 30s
     binary_sensors:
       - house_pump_run_requested
+      - header_valve_open_requested
+      - shed_valve_open_requested
     providers:
+      - name: header-tank-controller
+        encryption: !secret packet_transport_key
+      - name: house-tank-controller
+        encryption: !secret packet_transport_key
+      - name: shed-tank-controller
+        encryption: !secret packet_transport_key
       - name: house-pump-controller
         encryption: !secret packet_transport_key
 
+sensor:
+  # Every tank node broadcasts its level as tank_level; the provider tells them apart.
+  - platform: packet_transport
+    provider: header-tank-controller
+    id: header_tank_level
+    remote_id: tank_level
+
+  - platform: packet_transport
+    provider: house-tank-controller
+    id: house_tank_level
+    remote_id: tank_level
+
+  - platform: packet_transport
+    provider: shed-tank-controller
+    id: shed_tank_level
+    remote_id: tank_level
+
 binary_sensor:
-  # No initial publish: a panel reboot must not command the pump off.
+  # Requests have no local triggers; a request script publishing one is what gets
+  # it broadcast. Nothing here publishes at boot, so a panel reboot does not
+  # command a field relay on its own.
   - platform: template
     id: house_pump_run_requested
-    publish_initial_state: false
+    trigger_on_initial_state: false
 
+  - platform: template
+    id: header_valve_open_requested
+    trigger_on_initial_state: false
+
+  - platform: template
+    id: shed_valve_open_requested
+    trigger_on_initial_state: false
+
+  # Everything received below drives the interlocks and the screen, so the first
+  # state has to fire its triggers. ESPHome skips them otherwise, which would
+  # leave a button showing stopped while the relay is actually running.
   - platform: packet_transport
     provider: house-pump-controller
     id: pump_relay_reported
+    trigger_on_initial_state: true
 
-script:
-  - id: request_house_pump_on
-    then:
-      - binary_sensor.template.publish:
-          id: house_pump_run_requested
-          state: true
+  - platform: packet_transport
+    provider: header-tank-controller
+    id: header_valve_reported
+    remote_id: valve_relay_reported
+    trigger_on_initial_state: true
 
-  - id: request_house_pump_off
-    then:
-      - binary_sensor.template.publish:
-          id: house_pump_run_requested
-          state: false
+  - platform: packet_transport
+    provider: shed-tank-controller
+    id: shed_valve_reported
+    remote_id: valve_relay_reported
+    trigger_on_initial_state: true
+
+  - platform: packet_transport
+    provider: header-tank-controller
+    type: status
+    id: header_tank_online
+    name: Header Tank Link
+    trigger_on_initial_state: true
+
+  - platform: packet_transport
+    provider: house-tank-controller
+    type: status
+    id: house_tank_online
+    name: House Tank Link
+    trigger_on_initial_state: true
+
+  - platform: packet_transport
+    provider: shed-tank-controller
+    type: status
+    id: shed_tank_online
+    name: Shed Tank Link
+    trigger_on_initial_state: true
+
+  - platform: packet_transport
+    provider: house-pump-controller
+    type: status
+    id: house_pump_online
+    name: House Pump Link
+    trigger_on_initial_state: true

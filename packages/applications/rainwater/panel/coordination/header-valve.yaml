@@ -1,0 +1,40 @@
+# Header tank valve. This is the gravity feed to the house, not a transfer path,
+# so no level rule opens or closes it. The only requirement is that the panel can
+# reach the node it is commanding.
+#
+# No automatic close: the house transfer interlock stops the pump when this valve
+# reports closed, instead of this valve refusing to close under a running pump.
+
+binary_sensor:
+  - platform: template
+    id: header_valve_permitted
+    # Drives the button's enabled state, so the screen must see the first state.
+    trigger_on_initial_state: true
+    lambda: |-
+      if (!id(interlocks_armed)) {
+        return {};
+      }
+      return id(header_tank_online).state;
+
+script:
+  - id: request_header_valve_open
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(header_valve_permitted).has_state() &&
+                     id(header_valve_permitted).state;
+          then:
+            - binary_sensor.template.publish:
+                id: header_valve_open_requested
+                state: true
+          else:
+            - logger.log:
+                level: WARN
+                format: "Header valve open refused; tank controller unreachable"
+
+  - id: request_header_valve_close
+    then:
+      - binary_sensor.template.publish:
+          id: header_valve_open_requested
+          state: false
