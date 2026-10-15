@@ -2,15 +2,15 @@
 
 The header tank is the main store. House and shed tanks collect rainwater and transfer into it.
 
-House transfer needs two controllers: the house tank valve opens, and the house transfer-pump controller closes its contactor. Neither action alone is a complete house transfer. The field controllers do not sequence each other.
+House transfer is the house transfer-pump controller closing its contactor. The house collection tank controller reads level and does not switch a valve. The field controllers do not sequence each other.
 
 Shed transfer is different. Opening the shed tank valve lets water reach the shed pump, which already starts from its own pressure switch. The house transfer-pump controller is not part of shed transfer.
 
-Each tank controller keeps its own valve relay and, on the tank boards, its own pressure reading. Nothing in this repo imposes a maximum run time, a remote heartbeat, or a safe state when Wi-Fi drops.
+The header and shed tank controllers each switch their own valve relay. The house collection tank controller has no valve relay. Every tank board publishes its own pressure reading. Nothing in this repo imposes a maximum run time, a remote heartbeat, or a safe state when Wi-Fi drops.
 
 ## What the firmware does today
 
-Tank controllers publish shunt voltage, calculated current, and percent full from a per-board empty/full calibration, and they switch GPIO16 for the valve. The pump controller switches that same pin for the contactor. The panel shows the Guition bring-up page, now with a House Pump button beside the internal relay light. It does not read tank levels, and the pump is the only field relay it commands.
+Tank controllers publish shunt voltage, calculated current, and percent full from a per-board empty/full calibration. The header and shed controllers switch GPIO16 for the valve. The house collection tank controller leaves that relay unconfigured. The pump controller switches that same pin for the contactor. The panel shows the Guition bring-up page, now with a House Pump button beside the internal relay light. It does not read tank levels, and the pump is the only field relay it commands.
 
 Relay state is the coil output only. No valve end-stop, contactor auxiliary, or flow switch is configured, so published "on" is not physical confirmation.
 
@@ -23,7 +23,7 @@ This pair has not been range-checked on site, and no other node is on the transp
 The pump link follows the shape the rest should keep:
 
 - Carry sensor and binary-sensor state. Tank levels and any real proof sensors are still to come.
-- Publish persistent desired state. `house_pump_run_requested` is live; `house_valve_open_requested` and `shed_valve_open_requested` are not. Receivers act on that level. Do not send toggles.
+- Publish persistent desired state. `house_pump_run_requested` is live. `shed_valve_open_requested` is not. The house collection tank has no valve relay to command. Receivers act on that level. Do not send toggles.
 - Keep desired state and reported state separate. `pump_relay_reported` is the coil output and stays distinct from any future end-stop or contactor feedback.
 - Keep shared transport setup in `packages/communications/udp.yaml`. Put each node's published and received ids in that node's own communications package.
 - Keep house and shed sequences in separate panel coordination packages. Shed transfer must not grow a pump-contactor step.

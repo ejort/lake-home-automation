@@ -5,7 +5,7 @@ ESPHome firmware for the rainwater system at the lake house. Each physical devic
 Five devices make up the system:
 
 - **Header tank controller** — main storage tank. Reads level and switches its valve. Water leaves by gravity.
-- **House collection tank controller** — rainwater tank. Its valve has to open together with the house transfer pump.
+- **House collection tank controller** — rainwater tank. Reads level. No valve relay on this board. House transfer is the pump controller.
 - **Shed collection tank controller** — rainwater tank. Opening its valve lets the shed's existing pressure-switch pump transfer water.
 - **House transfer pump controller** — switches the contactor for the house transfer pump.
 - **Water Management Panel** — Guition ESP32-S3-4848S040. It is the intended coordinator and touch UI. The screen still runs the board bring-up page.
@@ -29,6 +29,7 @@ packages/
   applications/rainwater/
     header-tank.yaml
     collection-tank.yaml
+    house-collection-tank.yaml
     transfer-pump.yaml
     panel/         panel application and LVGL UI
 
@@ -48,13 +49,13 @@ Every device includes `packages/common/base.yaml`, which includes Wi-Fi and diag
 | Device file | Also includes |
 | --- | --- |
 | `header-tank-controller.yaml` | relay board, tank interface, `rainwater/header-tank.yaml` |
-| `house-tank-controller.yaml` | relay board, tank interface, `rainwater/collection-tank.yaml` |
+| `house-tank-controller.yaml` | relay board, tank interface, `rainwater/house-collection-tank.yaml` |
 | `shed-tank-controller.yaml` | relay board, tank interface, `rainwater/collection-tank.yaml` |
 | `house-transfer-pump-controller.yaml` | relay board, `rainwater/transfer-pump.yaml` |
 | `water-management-panel.yaml` | `guition-esp32-s3-4848s040.yaml`, `rainwater/panel/main.yaml` |
 | `first-flash.yaml` | base only, plus a bare ESP32 block |
 
-`header-tank.yaml` and `collection-tank.yaml` include valve control and the pressure level feature, which publishes current and percent full. `transfer-pump.yaml` includes pump control. `panel/main.yaml` includes the LVGL UI. Valve control and pump control both use GPIO16, so a device includes only one of them.
+`header-tank.yaml` and `collection-tank.yaml` include valve control and the pressure level feature, which publishes current and percent full. `house-collection-tank.yaml` includes pressure level only; that board has no valve relay. `transfer-pump.yaml` includes pump control. `panel/main.yaml` includes the LVGL UI. Valve control and pump control both use GPIO16, so a device includes only one of them.
 
 Node names are not the same as every filename. `water-management-panel.yaml` builds node `lake-control`. `house-transfer-pump-controller.yaml` builds node `house-pump-controller`. Details and proposed renames are in `docs/inventory.md`.
 

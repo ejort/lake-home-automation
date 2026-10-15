@@ -6,4 +6,4 @@ packages:
   base: !include packages/common/base.yaml
   board: !include packages/hardware/esp32-relay-board.yaml
   tank_interface: !include packages/hardware/tank-interface-v1.yaml
-  application: !include packages/applications/rainwater/collection-tank.yaml
+  application: !include packages/applications/rainwater/house-collection-tank.yaml

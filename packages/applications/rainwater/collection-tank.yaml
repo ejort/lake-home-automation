@@ -1,6 +1,5 @@
-# Rainwater collection tank. The local action is opening or closing this tank's valve.
-# House transfer also needs the separate transfer-pump controller. That sequence is not on this device.
-# Shed transfer starts when this valve opens, through the shed's existing pressure-switch pump.
+# Shed rainwater collection tank. The local action is opening or closing this tank's valve.
+# Opening the valve lets the shed's existing pressure-switch pump transfer water.
 
 packages:
   valve: !include ../../features/valve-control.yaml

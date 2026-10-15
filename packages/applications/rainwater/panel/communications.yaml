@@ -2,7 +2,7 @@
 # house_pump_run_requested is a held level, not a toggle, so a repeated broadcast is
 # harmless. pump_relay_reported is what the pump says its relay is doing.
 # UI handlers call the request scripts. They must not drive a remote relay inline.
-# Nothing here sequences a transfer: the house tank valve is still separate.
+# Nothing here sequences a transfer. The house collection tank has no valve relay.
 
 packet_transport:
   - platform: udp

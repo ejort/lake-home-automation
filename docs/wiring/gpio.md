@@ -8,7 +8,7 @@ Used by the header, house, and shed tank controllers and by the house transfer p
 
 | Function | GPIO | Notes |
 | --- | --- | --- |
-| Relay 1 | GPIO16 | Output, active-high. Valve on tank controllers. Pump contactor on the house pump controller. `RESTORE_DEFAULT_OFF`. |
+| Relay 1 | GPIO16 | Output, active-high. Valve on the header and shed tank controllers. Unused on the house collection tank controller. Pump contactor on the house pump controller. `RESTORE_DEFAULT_OFF`. |
 | Status LED | GPIO23 | Output, active-high. `RESTORE_DEFAULT_OFF`. |
 
 Tank controllers also carry the pressure interface. The pump controller does not.
