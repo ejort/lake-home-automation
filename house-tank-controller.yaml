@@ -1,8 +1,6 @@
 substitutions:
   name: house-tank-controller
   friendly_name: House Collection Tank Controller
-  # "House Collection Tank Controller Hotspot" is 40 characters; AP SSID max is 32.
-  ap_ssid: house-tank-controller Hotspot
 
 packages:
   base: !include packages/common/base.yaml
