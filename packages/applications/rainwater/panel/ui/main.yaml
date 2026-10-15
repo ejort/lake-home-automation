@@ -1,5 +1,5 @@
-# Bring-up UI preserved from the Guition board config.
-# This page toggles the panel's built-in relay light. It is not the rainwater status UI.
+# Bring-up UI preserved from the Guition board config, plus the house pump button.
+# The pump button requests run state over UDP; it is not the rainwater status UI.
 # Water overview, tank, transfer, settings, and alarm pages are not built yet.
 # Widget handlers must not grow transfer sequences; those belong in panel coordination.
 
@@ -7,6 +7,7 @@ substitutions:
   lightbulb: "\U000F0335"
   ceiling_light: "\U000F0769"
   lamp: "\U000F06B5"
+  water_pump: "\U000F058F"
   floor_lamp: "\U000F08DD"
   string_lights: "\U000F12BA"
 
@@ -48,6 +49,7 @@ font:
         "\U000F06B5", # mdi-lamp
         "\U000F08DD", # mdi-floor-lamp
         "\U000F12BA", # mdi-string-lights
+        "\U000F058F", # mdi-water-pump
       ]
 
 lvgl:
@@ -136,6 +138,51 @@ lvgl:
                   long_mode: dot
             on_click:
               light.toggle: internal_light
+
+        - button:
+            height: 223
+            checkable: true
+            id: lv_button_pump
+            widgets:
+              - label:
+                  text_font: light40
+                  align: top_left
+                  text: $water_pump
+                  id: lv_button_pump_icon
+              - label:
+                  align: bottom_left
+                  text: "House Pump"
+                  long_mode: dot
+            # Command the opposite of what the pump last reported.
+            on_click:
+              - if:
+                  condition:
+                    binary_sensor.is_on: pump_relay_reported
+                  then:
+                    - script.execute: request_house_pump_off
+                  else:
+                    - script.execute: request_house_pump_on
+
+binary_sensor:
+  # The button follows the pump's reported relay, not the local request, so it
+  # also tracks changes made on the pump itself.
+  - id: !extend pump_relay_reported
+    on_press:
+      - lvgl.widget.update:
+          id: lv_button_pump_icon
+          text_color: 0x42A5F5
+      - lvgl.widget.update:
+          id: lv_button_pump
+          state:
+            checked: true
+    on_release:
+      - lvgl.widget.update:
+          id: lv_button_pump_icon
+          text_color: 0xB6B6B6
+      - lvgl.widget.update:
+          id: lv_button_pump
+          state:
+            checked: false
 
 light:
   - platform: binary

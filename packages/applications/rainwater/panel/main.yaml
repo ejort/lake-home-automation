@@ -1,6 +1,9 @@
 # Water Management Panel application.
 # The entry point selects the Guition board. This package selects panel behaviour.
-# Shared state, commands, and house/shed coordination are not configured yet.
+# The panel commands the house pump over UDP. Shared state for the tanks and
+# house/shed transfer coordination are not configured yet.
 
 packages:
+  udp: !include ../../../communications/udp.yaml
+  communications: !include communications.yaml
   ui: !include ui/main.yaml

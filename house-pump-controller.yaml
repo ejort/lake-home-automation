@@ -2,12 +2,6 @@
 substitutions:
   name: house-pump-controller
   friendly_name: House Transfer Pump Controller
-  # "House Transfer Pump Controller Hotspot" is 38 characters; AP SSID max is 32.
-  ap_ssid: house-pump-controller Hotspot
-
-# Board is still reached at the first-flash hostname until that firmware is replaced.
-wifi:
-  use_address: first-flash.local
 
 packages:
   base: !include packages/common/base.yaml

@@ -1,0 +1,52 @@
+# Pump side of the panel link. The panel broadcasts house_pump_run_requested as a
+# held level; this node follows it and reports the relay back as pump_relay_reported.
+# Triggers fire on change only, so a repeated broadcast does not fight a local
+# change made on this node's own web page.
+# Reported state is the coil output. There is no contactor auxiliary or flow proof.
+# Losing Wi-Fi does not change the relay, and nothing here limits run time.
+
+packet_transport:
+  - platform: udp
+    udp_id: site_udp
+    update_interval: 5s
+    encryption: !secret packet_transport_key
+    rolling_code_enable: true
+    binary_sensors:
+      - pump_relay_reported
+    providers:
+      - name: lake-control
+        encryption: !secret packet_transport_key
+
+binary_sensor:
+  - platform: packet_transport
+    provider: lake-control
+    id: house_pump_run_requested
+    on_press:
+      - switch.turn_on: pump_relay
+    on_release:
+      - switch.turn_off: pump_relay
+
+  - platform: template
+    id: pump_relay_reported
+    publish_initial_state: false
+
+switch:
+  # Adds reporting to the relay defined in packages/features/pump-control.yaml.
+  - id: !extend pump_relay
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: pump_relay_reported
+          state: true
+    on_turn_off:
+      - binary_sensor.template.publish:
+          id: pump_relay_reported
+          state: false
+
+esphome:
+  on_boot:
+    # After GPIO setup, so this reports the restored relay state.
+    - priority: 400
+      then:
+        - binary_sensor.template.publish:
+            id: pump_relay_reported
+            state: !lambda return id(pump_relay).state;

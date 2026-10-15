@@ -25,7 +25,7 @@ first-flash.yaml
 packages/
   common/          base, Wi-Fi, diagnostics
   hardware/        relay board, tank interface, Guition panel
-  features/        pressure current, valve relay, pump relay
+  features/        pressure current and tank level, valve relay, pump relay
   applications/rainwater/
     header-tank.yaml
     collection-tank.yaml
@@ -37,7 +37,7 @@ docs/              inventory, system behaviour, commissioning, wiring
 secrets.yaml       local only, not committed
 ```
 
-Device files stay small: node name, friendly name, package selection, and installation overrides such as `wifi.use_address`. GPIO maps stay in hardware packages. Pressure math, valve relay, and pump relay stay in feature packages. Tank role notes stay in the rainwater application packages.
+Device files stay small: node name, friendly name, package selection, and installation overrides such as `wifi.use_address`. GPIO maps stay in hardware packages. Pressure math, valve relay, and pump relay stay in feature packages. Per-tank level calibration is not in YAML at all; it is set on each board. Tank role notes stay in the rainwater application packages.
 
 There is no device-to-device transport in the tree yet. See `docs/rainwater-system.md` before adding ESPHome packet transport.
 
@@ -54,7 +54,7 @@ Every device includes `packages/common/base.yaml`, which includes Wi-Fi and diag
 | `water-management-panel.yaml` | `guition-esp32-s3-4848s040.yaml`, `rainwater/panel/main.yaml` |
 | `first-flash.yaml` | base only, plus a bare ESP32 block |
 
-`header-tank.yaml` and `collection-tank.yaml` include valve control and pressure current. `transfer-pump.yaml` includes pump control. `panel/main.yaml` includes the LVGL UI. Valve control and pump control both use GPIO16, so a device includes only one of them.
+`header-tank.yaml` and `collection-tank.yaml` include valve control and the pressure level feature, which publishes current and percent full. `transfer-pump.yaml` includes pump control. `panel/main.yaml` includes the LVGL UI. Valve control and pump control both use GPIO16, so a device includes only one of them.
 
 Node names are not the same as every filename. `water-management-panel.yaml` builds node `lake-control`. `house-transfer-pump-controller.yaml` builds node `house-pump-controller`. Details and proposed renames are in `docs/inventory.md`.
 
@@ -86,5 +86,5 @@ Pass more than one name to compile and upload several devices in order. With no 
 2. Set `name` to a new node name. Reuse an existing node name only when you mean to update that same device.
 3. Set `friendly_name`.
 4. Include `packages/common/base.yaml` and the hardware package that matches the board. Include one application package.
-5. Put installation-only settings in the new file: `wifi.use_address`, and later any per-tank level calibration. Do not copy GPIO maps into the device file.
+5. Put installation-only settings in the new file: `wifi.use_address`. Do not copy GPIO maps into the device file. Level calibration is set on the board after flashing, not here; see `docs/commissioning.md`.
 6. Validate with `esphome config`, then compile. Flash only when the node name and `use_address` match the board you intend to update.

@@ -32,6 +32,8 @@ Affected references:
 
 Unchanged entity names: `Valve Relay`, `LED Switch`, `Pressure Sensor Voltage`, `Pressure Sensor Current`, `Backlight`, `Internal Light`, diagnostics (`Uptime`, `ESPHome Version`, Wi-Fi, IP).
 
+New on the three tank controllers: sensor `Tank Level` (%), and config numbers `Level Empty Current` and `Level Full Current` (mA). They appear on the next upload. Calibration is per board and lives in flash, so each tank keeps its own values. See `docs/commissioning.md`.
+
 `house-pump-controller` no longer includes the ADS1115 pressure sensors. That interface was copied from the tank template. The pump file now includes only the relay board and the contactor relay. Dropped entities on the next upload, if they were adopted: Pressure Sensor Voltage, Pressure Sensor Current.
 
 The relay entity on the pump is still `id: valve_relay`, name `Valve Relay`.

@@ -1,0 +1,7 @@
+# Shared UDP socket for node-to-node packet transport. There is no Home Assistant
+# and no broker; nodes exchange sensor levels directly.
+# Defaults are used: local broadcast 255.255.255.255, port 18511. Both nodes must
+# be able to hear each other's broadcasts, so client isolation on the AP breaks this.
+
+udp:
+  - id: site_udp

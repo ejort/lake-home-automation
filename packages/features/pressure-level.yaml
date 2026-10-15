@@ -1,6 +1,38 @@
 # Requires tank-interface-v1 (id: pressure_voltage).
 # 100 ohm shunt: I(mA) = V / 100 * 1000 = V * 10.
-# Tank level in length or percent is not calibrated.
+# Percent full is a straight line between two per-board calibration points.
+# Defaults are the nominal 4-20 mA span, not a measured tank. Set them per node.
+
+number:
+  - platform: template
+    id: level_empty_current
+    name: Level Empty Current
+    unit_of_measurement: mA
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 4.0
+    min_value: 0
+    max_value: 25
+    step: 0.01
+    mode: box
+    on_value:
+      - component.update: tank_level
+
+  - platform: template
+    id: level_full_current
+    name: Level Full Current
+    unit_of_measurement: mA
+    entity_category: config
+    optimistic: true
+    restore_value: true
+    initial_value: 20.0
+    min_value: 0
+    max_value: 25
+    step: 0.01
+    mode: box
+    on_value:
+      - component.update: tank_level
 
 sensor:
   - platform: template
@@ -14,3 +46,19 @@ sensor:
         return NAN;
       }
       return id(pressure_voltage).state * 10.0;
+
+  - platform: template
+    id: tank_level
+    name: Tank Level
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      const float current = id(pressure_current).state;
+      const float empty = id(level_empty_current).state;
+      const float full = id(level_full_current).state;
+      if (isnan(current) || isnan(empty) || isnan(full) || empty == full) {
+        return NAN;
+      }
+      const float percent = (current - empty) / (full - empty) * 100.0f;
+      return clamp(percent, 0.0f, 100.0f);

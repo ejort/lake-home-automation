@@ -1,14 +1,14 @@
 # House transfer-pump contactor relay. Do not include together with valve-control.
-# GPIO16, active-high, restore off. Entity id and name are still valve_relay /
-# "Valve Relay" so the existing house-pump-controller entity identity is unchanged.
-# Proposed rename, not applied: id pump_relay, name "Pump Relay".
+# GPIO16, active-high, restore off. Entity id pump_relay, name "Pump Relay".
+# A board still running the older firmware publishes this as valve_relay /
+# "Valve Relay"; the panel link uses the pump_relay id, so that board must be reflashed.
 # There is no contactor auxiliary or flow proof; relay state is not pump-running confirmation.
-# Panel run requests are not accepted here yet.
+# Panel run requests arrive through the node's communications package, not here.
 
 switch:
   - platform: gpio
-    id: valve_relay
-    name: Valve Relay
+    id: pump_relay
+    name: Pump Relay
     restore_mode: RESTORE_DEFAULT_OFF
     pin:
       number: GPIO16

@@ -1,8 +1,6 @@
 substitutions:
   name: shed-tank-controller
   friendly_name: Shed Collection Tank Controller
-  # "Shed Collection Tank Controller Hotspot" is 39 characters; AP SSID max is 32.
-  ap_ssid: shed-tank-controller Hotspot
 
 packages:
   base: !include packages/common/base.yaml

@@ -1,5 +1,8 @@
 # Contactor output for the house transfer pump.
-# Desired run state from the panel is not implemented; the relay is local only.
+# The panel's run request arrives over UDP packet transport and drives the relay.
+# This node still runs no transfer sequence of its own.
 
 packages:
   pump: !include ../../features/pump-control.yaml
+  udp: !include ../../communications/udp.yaml
+  communications: !include house-pump-communications.yaml

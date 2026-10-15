@@ -1,0 +1,40 @@
+# Panel side of the house pump link. The panel owns the request; the pump owns the relay.
+# house_pump_run_requested is a held level, not a toggle, so a repeated broadcast is
+# harmless. pump_relay_reported is what the pump says its relay is doing.
+# UI handlers call the request scripts. They must not drive a remote relay inline.
+# Nothing here sequences a transfer: the house tank valve is still separate.
+
+packet_transport:
+  - platform: udp
+    udp_id: site_udp
+    update_interval: 5s
+    encryption: !secret packet_transport_key
+    rolling_code_enable: true
+    binary_sensors:
+      - house_pump_run_requested
+    providers:
+      - name: house-pump-controller
+        encryption: !secret packet_transport_key
+
+binary_sensor:
+  # No initial publish: a panel reboot must not command the pump off.
+  - platform: template
+    id: house_pump_run_requested
+    publish_initial_state: false
+
+  - platform: packet_transport
+    provider: house-pump-controller
+    id: pump_relay_reported
+
+script:
+  - id: request_house_pump_on
+    then:
+      - binary_sensor.template.publish:
+          id: house_pump_run_requested
+          state: true
+
+  - id: request_house_pump_off
+    then:
+      - binary_sensor.template.publish:
+          id: house_pump_run_requested
+          state: false

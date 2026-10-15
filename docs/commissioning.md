@@ -4,6 +4,8 @@
 
 Copy `secrets.yaml.example` to `secrets.yaml` in the repo root and fill it in. Do not commit `secrets.yaml`. Generated `.esphome/` directories are gitignored.
 
+`packet_transport_key` is shared by every node on the UDP transport. Nodes with different keys reject each other's packets, so changing it means reflashing all of them. The panel's House Pump button needs both `water-management-panel` and `house-pump-controller` flashed from this tree.
+
 The deploy script uses Docker image `ghcr.io/esphome/esphome:2026.9.1`. Check a file with `esphome config <file>.yaml` before any upload.
 
 ## First flash
@@ -26,7 +28,11 @@ The icon font is `assets/fonts/materialdesignicons-webfont.ttf` (Material Design
 
 ## Calibration
 
-Tank interfaces share one gain (`4.096`) and the 100 ohm shunt formula. Per-tank zero and span are not set. When they are known, put them in that tank's root YAML and consume them from `packages/features/pressure-level.yaml`. Do not hard-code one tank's depth into the shared feature.
+Tank interfaces share one gain (`4.096`) and the 100 ohm shunt formula. Percent full is calibrated on the board, not in YAML, so the three tanks run the same firmware with different numbers.
+
+Each tank node publishes two config numbers, `Level Empty Current` and `Level Full Current`, in mA. Percent full is the straight line between them, clamped to 0–100. First boot uses the nominal span, 4.0 and 20.0, which is not a measured tank.
+
+To calibrate, open the node's web server or use the API, read `Pressure Sensor Current` at a known empty tank and write that value into `Level Empty Current`, then do the same at full for `Level Full Current`. `Tank Level` updates as soon as either number changes. Values are stored in flash and survive a reboot, but preferences flush every 10 minutes, so leave the node powered for a while after calibrating. A node where empty and full are equal publishes no level.
 
 ## Upload
 

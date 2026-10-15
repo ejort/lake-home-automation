@@ -10,25 +10,22 @@ Each tank controller keeps its own valve relay and, on the tank boards, its own 
 
 ## What the firmware does today
 
-Tank controllers publish shunt voltage and calculated current, and they switch GPIO16 for the valve. The pump controller switches that same pin for the contactor. The panel shows the Guition bring-up page (one button, internal relay light) and does not read tank levels or command field relays.
+Tank controllers publish shunt voltage, calculated current, and percent full from a per-board empty/full calibration, and they switch GPIO16 for the valve. The pump controller switches that same pin for the contactor. The panel shows the Guition bring-up page, now with a House Pump button beside the internal relay light. It does not read tank levels, and the pump is the only field relay it commands.
 
 Relay state is the coil output only. No valve end-stop, contactor auxiliary, or flow switch is configured, so published "on" is not physical confirmation.
 
 ## Packet transport
 
-No ESPHome packet transport is configured. This refactor does not add one. Two transports are supported by [packet transport](https://esphome.io/components/packet_transport/) and neither has been proven on this site:
+The panel and the house pump are linked by [packet transport](https://esphome.io/components/packet_transport/) over UDP, in `packages/communications/udp.yaml` and each node's own communications package. There is no Home Assistant and no broker. Broadcast defaults are used (`255.255.255.255`, port `18511`), so the link needs both nodes on the same Wi-Fi without client isolation. Traffic is encrypted with the shared `packet_transport_key` secret and carries a rolling code, so a replayed packet cannot close the contactor.
 
-- **UDP over Wi-Fi.** Uses the existing association and IP network. It fails when a node is off Wi-Fi, on the wrong VLAN, or asleep. Coverage is the access-point layout, which is not documented here.
-- **ESP-NOW.** Radio frames on the current Wi-Fi channel, without IP. Peers still share the Wi-Fi radio, unicast needs MAC addresses, and range is not the same thing as "joined the house SSID".
+This pair has not been range-checked on site, and no other node is on the transport yet. ESP-NOW remains the alternative if UDP coverage turns out to be the problem: radio frames on the current Wi-Fi channel, without IP, but unicast needs MAC addresses and range is not the same thing as "joined the house SSID".
 
-Pick one after a range check between the panel, both collection tanks, the header tank, and the pump. Until then, do not assume any pair can hear each other.
+The pump link follows the shape the rest should keep:
 
-Intended shape once a transport exists:
-
-- Carry sensor and binary-sensor state (level, relay output, later any real proof sensors).
-- Publish persistent desired state, for example `house_pump_run_requested`, `house_valve_open_requested`, and `shed_valve_open_requested`. Receivers act on that level. Do not send toggles.
-- Keep desired state and reported state separate. Reported relay state stays distinct from any future end-stop or contactor feedback.
-- Put shared transport setup in one package. Put each node's published and received ids in that node's own communications package.
+- Carry sensor and binary-sensor state. Tank levels and any real proof sensors are still to come.
+- Publish persistent desired state. `house_pump_run_requested` is live; `house_valve_open_requested` and `shed_valve_open_requested` are not. Receivers act on that level. Do not send toggles.
+- Keep desired state and reported state separate. `pump_relay_reported` is the coil output and stays distinct from any future end-stop or contactor feedback.
+- Keep shared transport setup in `packages/communications/udp.yaml`. Put each node's published and received ids in that node's own communications package.
 - Keep house and shed sequences in separate panel coordination packages. Shed transfer must not grow a pump-contactor step.
 
 The panel should own requested state, reported state, availability, and transfer progress. UI handlers should call the same command entry points as automatic coordination, not drive relays inline.
@@ -41,5 +38,5 @@ These are missing on purpose. Adding them would change how the relays behave.
 - **Communication loss.** API `reboot_timeout` is `0s`, so losing Home Assistant does not reboot the node and does not force relays off. Wi-Fi loss does not change valve or pump outputs.
 - **Restart recovery.** Valve, pump, and status LED use `RESTORE_DEFAULT_OFF`: the last state is restored when flash has it, otherwise the output stays off. Preferences flush every 10 minutes, so a power cut inside that window can forget a recent switch change. Panel backlight is `ALWAYS_ON`.
 - **Maximum runtime.** Nothing turns a valve or the pump off after a time limit. A latched request or a restored "on" can run until something switches it off.
-- **Level calibration.** Current is shunt voltage times 10. There is no per-tank empty/full span, so percent or depth is not published.
+- **Level in depth.** Percent full comes from the per-tank empty/full current span set on each board. Depth in length is still not published, and nothing uses percent to start or stop a transfer.
 - **Panel coordination and water UI.** Not implemented. The LVGL page is still the Center Light bring-up control.
